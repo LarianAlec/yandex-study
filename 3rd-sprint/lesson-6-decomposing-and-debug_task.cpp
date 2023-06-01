@@ -1,10 +1,10 @@
 #include <cassert>
 #include <iostream>
 #include <map>
-#include <set>
 #include <string>
 #include <vector>
 #include <sstream>
+#include <cassert>
 
 using namespace std;
 
@@ -28,7 +28,8 @@ istream& operator>>(istream& is, Query& q) {
 }
 
 struct BusesForStopResponse {
-    // Наполните полями эту структуру
+    string stop_name;
+    vector<string> buses;
 };
 
 ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
@@ -37,7 +38,8 @@ ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
 }
 
 struct StopsForBusResponse {
-    // Наполните полями эту структуру
+    string bus_name;
+    vector<string> stops;
 };
 
 ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
@@ -46,7 +48,7 @@ ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
 }
 
 struct AllBusesResponse {
-    // Наполните полями эту структуру
+    map<string, vector<string>> buses_for_stops;
 };
 
 ostream& operator<<(ostream& os, const AllBusesResponse& r) {
@@ -57,36 +59,77 @@ ostream& operator<<(ostream& os, const AllBusesResponse& r) {
 class BusManager {
 public:
     void AddBus(const string& bus, const vector<string>& stops) {
-        // Реализуйте этот метод
+        stops_for_bus_[bus] = stops;
+        for (const string& stop : stops) {
+            buses_for_stops_[stop].push_back(bus);
+        }
     }
 
     BusesForStopResponse GetBusesForStop(const string& stop) const {
-        // Реализуйте этот метод
+        BusesForStopResponse response;
+        if(buses_for_stops_.count(stop)) {
+            response.stop_name = stop;
+            response.buses = buses_for_stops_.at(stop);
+        }
+        return response;
     }
 
     StopsForBusResponse GetStopsForBus(const string& bus) const {
-        // Реализуйте этот метод
+        StopsForBusResponse response;
+        if (stops_for_bus_.count(bus)) {
+            response.bus_name = bus;
+            response.stops = stops_for_bus_.at(bus);
+        }
+        return response;
     }
 
     AllBusesResponse GetAllBuses() const {
-        // Реализуйте этот метод
+        AllBusesResponse response;
+        response.buses_for_stops = buses_for_stops_;
+        return response;
     }
 
 private:
-    map<string, set<string>> buses_to_stop_;
-    map<string, set<string>> stops_to_bus_;
+    map<string, vector<string>> buses_for_stops_, // маршруты автобуса на остановке
+                                stops_for_bus_;  //остановки автобуса
 };
 
 
 // Модульные тесты
+void TestingNewBusMethod() {
+    BusManager bm;
+    bm.AddBus("golden_ring"s, {"sergiev_posad"s, "rostov"s, "ivanovo"s, "vladimir"s});
 
+    assert(bm.GetStopsForBus("golden_ring"s).bus_name == "golden_ring"s);
+    assert(bm.GetStopsForBus("golden_ring"s).stops.size() == 4);
+}
+
+void TestingGetBusesForStopMethod() {
+    BusManager bm;
+    bm.AddBus("golden_ring"s, {"sergiev_posad"s, "rostov"s, "ivanovo"s, "vladimir"s});
+    bm.AddBus("golden_apple"s, { "rostov"s, "ivanovo"s});
+    
+    assert(bm.GetBusesForStop("rostov"s).stop_name == "rostov"s);
+    assert(bm.GetBusesForStop("rostov"s).buses.size() == 2);
+    assert(bm.GetBusesForStop("vladimir"s).buses.size() == 1);
+}
 
 
 // Тестирование
+void Test() {
+    TestingNewBusMethod();
+    cout << "TestingNewBusMethod() complete!" << endl;
 
+    TestingGetBusesForStopMethod();
+    cout << "TestingGetBusesForStopMethod() complete!" << endl;
+
+    cout << "Tests complete!"s << endl;
+}
 
 
 int main() {
+    Test();
+
     int query_count;
     Query q;
 
