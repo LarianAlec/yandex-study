@@ -57,29 +57,55 @@ ostream& operator<<(ostream& os, const BusesForStopResponse& r) {
     if (r.stop_name.empty()) {
         os << "No stop"s;
         return os;
-    } else {
-        for (const auto& bus : r.buses) {
-            os << bus << " "s;
-        }
-        return os;
     }
+    
+    bool first = true;
+    for (const auto& bus : r.buses) {
+        if(!first) {
+            os << " "s;
+        }
+        first = false;
+        os << bus;
+    }
+    return os;
 }
 
 struct StopsForBusResponse {
     string bus_name;
     vector<string> stops;
-    map<string, vector<string>> buses_for_stop;
+    vector<vector<string>> numbers_bus;
+    //map<string, vector<string>> buses_for_stop;
 };
 
 ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
     if (r.bus_name.empty()) {
-        os << "No bus"s;
+        os << "No bus"s << endl;
     } else {
+        int i =0;
         for (const string& stop : r.stops) {
         os << "Stop "s << stop << ": "s;
-        if (r.buses_for_stop.at(stop).size() == 1) {
-            os << "no interchange\n"s;
-            
+            if (r.numbers_bus[i].size() == 1) {
+                 os << "no interchange"s;
+                if (stop == r.stops.back()) continue;
+                os << "\n"s;
+            } else {
+                // для каждой остановки вывести номера автобусов
+                for (const string& bus : r.numbers_bus[i]) {
+                os << bus;
+                // если автобус не последний – ставим пробел иначе перенос строки
+                if (bus != r.numbers_bus[i].back())  {
+                    os << " "s;
+                } else { 
+                    os << endl;
+                }
+                
+            }
+            ++i;
+            }
+        /*if (r.buses_for_stop.at(stop).size() == 1) {
+            os << "no interchange"s;
+            if (stop == r.stops.back()) continue;
+            os << "\n"s;    
         } else {
             for (const string& bus : r.buses_for_stop.at(stop)) {
                 if (bus == r.bus_name) continue;
@@ -87,12 +113,13 @@ ostream& operator<<(ostream& os, const StopsForBusResponse& r) {
             }
             if (stop == r.stops.back()) continue;
             os << "\n"s;
-        }
+        }*/
         }
 
     }
     return os;
 }
+
 
 struct AllBusesResponse {
     map<string, vector<string>> buses_and_stops;
@@ -118,38 +145,46 @@ ostream& operator<<(ostream& os, const AllBusesResponse& r) {
 class BusManager {
 public:
     void AddBus(const string& bus, const vector<string>& stops) {
-        stops_for_bus_[bus] = stops;
+        bus_and_stops_[bus] = stops;
         for (const string& stop : stops) {
-            buses_for_stop_[stop].push_back(bus);
+            stop_and_buses_[stop].push_back(bus);
         }
     }
 
     BusesForStopResponse GetBusesForStop(const string& stop) const {
         BusesForStopResponse response;
-        if(buses_for_stop_.count(stop)) {
+        if(stop_and_buses_.count(stop)) {
             response.stop_name = stop;
-            response.buses = buses_for_stop_.at(stop);
+            response.buses = stop_and_buses_.at(stop);
         }
         return response;
     }
 
     StopsForBusResponse GetStopsForBus(const string& bus) const {
         StopsForBusResponse response;
-        if (stops_for_bus_.count(bus)) {
-            response.bus_name = bus;
-            response.stops = stops_for_bus_.at(bus);
+        response.bus_name = bus;
+
+        if (bus_and_stops_.count(bus)) {
+            response.stops = bus_and_stops_.at(bus);
+
+            for (const string& stop : response.stops) {
+                if (stop_and_buses_.count(stop)) {
+                response.numbers_bus.push_back(stop_and_buses_.at(stop));
+                }
+            }
         }
-        response.buses_for_stop = buses_for_stop_;
         return response;
     }
 
     AllBusesResponse GetAllBuses() const {
-        return AllBusesResponse {stops_for_bus_};
+        AllBusesResponse response;
+        response.buses_and_stops = bus_and_stops_;
+        return response;
     }
 
 private:
-    map<string, vector<string>> buses_for_stop_, // автобусы на остановке
-                                stops_for_bus_;  //остановки автобуса
+    map<string, vector<string>> stop_and_buses_, // № автобусов на остановке
+                                bus_and_stops_;  //остановки автобуса
 };
 
 
@@ -188,8 +223,7 @@ void Test() {
 
 
 int main() {
-    Test();
-
+    //Test();
     int query_count;
     Query q;
 
